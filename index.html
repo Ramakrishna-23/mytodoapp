@@ -303,51 +303,65 @@
         }
 
         .notes-container {
-            position: relative;
             border: 1px solid #e9e9e7;
             border-radius: 6px;
-            min-height: 300px;
             background: white;
         }
 
         .notes-editor {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
             border: none;
             outline: none;
+            width: 100%;
             min-height: 300px;
             font-size: 1rem;
             line-height: 1.7;
             resize: vertical;
-            font-family: inherit;
-            color: transparent;
-            background: transparent;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            color: #37352f;
+            background: #fafafa;
+            border-radius: 6px;
             padding: 16px;
-            z-index: 2;
-            caret-color: #37352f;
+            border: 1px solid #e9e9e7;
+        }
+
+        .notes-editor::placeholder {
+            color: #9b9a97;
         }
 
         .notes-preview {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            min-height: 300px;
             padding: 16px;
-            font-family: inherit;
-            font-size: 1rem;
-            line-height: 1.7;
-            color: #37352f;
             background: white;
             border-radius: 6px;
-            pointer-events: none;
-            z-index: 1;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            word-wrap: break-word;
+            border: 1px solid #e9e9e7;
+            font-family: inherit;
+            line-height: 1.7;
+        }
+
+        .notes-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .toggle-btn {
+            padding: 8px 16px;
+            border: 1px solid #e9e9e7;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-btn.active {
+            background: #2383e2;
+            color: white;
+            border-color: #2383e2;
+        }
+
+        .toggle-btn:hover:not(.active) {
+            background: #f8f8f7;
         }
 
         .markdown-guide {
@@ -598,11 +612,14 @@
                 <strong>Markdown supported:</strong> 
                 <code># Headers</code>, <code>**bold**</code>, <code>*italic*</code>, <code>- lists</code>, <code>[links](url)</code>, <code>`code`</code>, <code>> quotes</code>
             </div>
+            <div class="notes-toggle">
+                <button class="toggle-btn active" id="editBtn" onclick="switchNotesMode('edit')">✏️ Edit</button>
+                <button class="toggle-btn" id="previewBtn" onclick="switchNotesMode('preview')">👁️ Preview</button>
+            </div>
             <div class="notes-container">
-                <div class="notes-preview markdown-content" id="notesPreview"></div>
-                <textarea class="notes-editor" id="notesEditor" placeholder="# Welcome to your live markdown editor!
+                <textarea class="notes-editor" id="notesEditor" placeholder="# Welcome to your markdown notes!
 
-## Start typing and see formatting appear instantly:
+## You can use markdown formatting:
 
 ### Text Formatting
 - **Bold text** with **double asterisks**
@@ -624,9 +641,24 @@
 > Blockquotes for important notes
 > Look professional and clean
 
+```javascript
+// Code blocks with syntax highlighting
+function saveNotes() {
+    console.log('Auto-saved!');
+}
+```
+
+### Tables
+| Feature | Status |
+|---------|--------|
+| Auto-save | ✅ |
+| Markdown | ✅ |
+| Mobile | ✅ |
+
 ---
 
 Everything saves automatically as you type!"></textarea>
+                <div class="notes-preview markdown-content" id="notesPreview" style="display: none;"></div>
             </div>
         </div>
     </div>
@@ -658,9 +690,13 @@ Everything saves automatically as you type!"></textarea>
                 todoIdCounter = Math.max(...appData.todos.map(t => t.id)) + 1;
             }
             
+            // Set notes mode
+            if (appData.notesMode) {
+                switchNotesMode(appData.notesMode);
+            }
+            
             renderTodos();
             updateStats();
-            renderLiveMarkdown();
         }
 
         // Save data with debouncing
@@ -677,6 +713,7 @@ Everything saves automatically as you type!"></textarea>
                 appData.title = document.getElementById('pageTitle').value;
                 appData.subtitle = document.getElementById('pageSubtitle').value;
                 appData.notes = document.getElementById('notesEditor').value;
+                appData.notesMode = document.getElementById('editBtn').classList.contains('active') ? 'edit' : 'preview';
                 
                 localStorage.setItem('notionTodoApp', JSON.stringify(appData));
                 
@@ -821,49 +858,43 @@ Everything saves automatically as you type!"></textarea>
             }
         }
 
-        // Live markdown rendering for notes
-        function renderLiveMarkdown() {
-            const editor = document.getElementById('notesEditor');
-            const preview = document.getElementById('notesPreview');
-            
-            const text = editor.value;
-            
-            if (!text.trim()) {
-                preview.innerHTML = '';
-                return;
-            }
-            
+        // Markdown functions
+        function renderMarkdown(text) {
+            if (!text || text.trim() === '') return '<em>No content</em>';
             try {
-                // Use marked.js for proper markdown rendering
-                const rendered = marked.parse(text);
-                preview.innerHTML = rendered;
+                return marked.parse(text);
             } catch (error) {
-                // Fallback to simple rendering if marked fails
-                let rendered = text
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                    .replace(/`(.*?)`/g, '<code style="background: #f1f1ef; padding: 2px 4px; border-radius: 3px; font-family: monospace;">$1</code>')
-                    .replace(/^### (.*$)/gm, '<h3 style="font-size: 1.1em; font-weight: 600; margin: 16px 0 8px 0; color: #37352f;">$1</h3>')
-                    .replace(/^## (.*$)/gm, '<h2 style="font-size: 1.3em; font-weight: 600; margin: 16px 0 8px 0; color: #37352f;">$1</h2>')
-                    .replace(/^# (.*$)/gm, '<h1 style="font-size: 1.5em; font-weight: 600; margin: 16px 0 8px 0; color: #37352f;">$1</h1>')
-                    .replace(/^- (.*$)/gm, '<span style="color: #37352f;">• $1</span>')
-                    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color: #2383e2; text-decoration: none;">$1</a>')
-                    .replace(/^> (.*$)/gm, '<span style="border-left: 3px solid #2383e2; padding-left: 12px; color: #787774; font-style: italic;">$1</span>')
-                    .replace(/\n/g, '<br>');
-                
-                preview.innerHTML = rendered;
+                return '<em>Error rendering markdown</em>';
             }
-            
-            // Sync scroll position
-            syncScroll();
         }
 
-        function syncScroll() {
+        function switchNotesMode(mode) {
+            const editBtn = document.getElementById('editBtn');
+            const previewBtn = document.getElementById('previewBtn');
             const editor = document.getElementById('notesEditor');
             const preview = document.getElementById('notesPreview');
             
-            const scrollPercentage = editor.scrollTop / (editor.scrollHeight - editor.clientHeight);
-            preview.scrollTop = scrollPercentage * (preview.scrollHeight - preview.clientHeight);
+            if (mode === 'edit') {
+                editBtn.classList.add('active');
+                previewBtn.classList.remove('active');
+                editor.style.display = 'block';
+                preview.style.display = 'none';
+            } else {
+                editBtn.classList.remove('active');
+                previewBtn.classList.add('active');
+                editor.style.display = 'none';
+                preview.style.display = 'block';
+                updateNotesPreview();
+            }
+            
+            appData.notesMode = mode;
+            saveData();
+        }
+
+        function updateNotesPreview() {
+            const preview = document.getElementById('notesPreview');
+            const content = document.getElementById('notesEditor').value;
+            preview.innerHTML = renderMarkdown(content);
         }
 
         function showTodoDetails(todoId) {
@@ -903,10 +934,26 @@ Everything saves automatically as you type!"></textarea>
 
         document.getElementById('notesEditor').addEventListener('input', function() {
             saveData();
-            renderLiveMarkdown();
+            if (document.getElementById('previewBtn').classList.contains('active')) {
+                updateNotesPreview();
+            }
         });
         
-        document.getElementById('notesEditor').addEventListener('scroll', syncScroll);
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            
+            // Initialize preview
+            updatePreview();
+            
+            const textareas = document.querySelectorAll('textarea:not(#notesEditor)');
+            textareas.forEach(textarea => {
+                autoResize(textarea);
+                textarea.addEventListener('input', function() {
+                    autoResize(this);
+                });
+            });
+        });
 
         document.getElementById('newTodo').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
@@ -918,7 +965,10 @@ Everything saves automatically as you type!"></textarea>
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
             
-            const textareas = document.querySelectorAll('textarea');
+            // Auto-resize notes editor
+            autoResizeNotes();
+            
+            const textareas = document.querySelectorAll('textarea:not(#notesEditor):not(#notesMirror)');
             textareas.forEach(textarea => {
                 autoResize(textarea);
                 textarea.addEventListener('input', function() {
