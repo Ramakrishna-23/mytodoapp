@@ -310,52 +310,37 @@
             font-size: 1rem;
             line-height: 1.7;
             resize: vertical;
-            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-            color: #37352f;
-            background: #fafafa;
-            border-radius: 6px;
-            padding: 16px;
-            border: 1px solid #e9e9e7;
-        }
-
-        .notes-editor::placeholder {
-            color: #9b9a97;
-        }
-
-        .notes-preview {
-            min-height: 300px;
-            padding: 16px;
-            background: white;
-            border-radius: 6px;
-            border: 1px solid #e9e9e7;
             font-family: inherit;
-            line-height: 1.7;
-        }
-
-        .notes-toggle {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .toggle-btn {
-            padding: 8px 16px;
-            border: 1px solid #e9e9e7;
+            color: #37352f;
             background: white;
             border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
+            padding: 16px;
+            border: 1px solid #e9e9e7;
+            position: relative;
         }
 
-        .toggle-btn.active {
-            background: #2383e2;
-            color: white;
-            border-color: #2383e2;
+        .notes-container {
+            position: relative;
         }
 
-        .toggle-btn:hover:not(.active) {
-            background: #f8f8f7;
+        .notes-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 16px;
+            pointer-events: none;
+            background: transparent;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 1rem;
+            line-height: 1.7;
+            color: transparent;
+            overflow: hidden;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            z-index: 1;
         }
 
         .markdown-guide {
@@ -396,56 +381,24 @@
             border: 1px solid #2383e2;
         }
 
-        .todo-details::placeholder {
-            color: #9b9a97;
-        }
-
-        .todo-details-rendered {
-            font-size: 0.9rem;
+        .add-details-btn {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            background: #f1f1ef;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
             color: #787774;
-            background: white;
-            border-radius: 4px;
-            padding: 8px 12px;
-            margin-top: 8px;
-            border: 1px solid #e9e9e7;
-            min-height: 40px;
-            font-family: inherit;
-            line-height: 1.5;
-        }
-
-        .todo-mode-toggle {
-            display: flex;
-            gap: 4px;
-            margin-left: auto;
+            transition: background 0.2s ease;
             opacity: 0;
-            transition: opacity 0.2s ease;
         }
 
-        .todo-item:hover .todo-mode-toggle {
+        .todo-item:hover .add-details-btn {
             opacity: 1;
         }
 
-        .mode-btn {
-            width: 24px;
-            height: 24px;
-            border: none;
-            background: #f1f1ef;
-            border-radius: 3px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s ease;
-            font-size: 12px;
-        }
-
-        .mode-btn:hover {
+        .add-details-btn:hover {
             background: #e9e9e7;
-        }
-
-        .mode-btn.active {
-            background: #2383e2;
-            color: white;
         }
 
         /* Markdown styling */
@@ -634,17 +587,14 @@
                 <span class="section-icon">📝</span>
                 Notes & Details
             </div>
-            <div class="notes-toggle">
-                <button class="toggle-btn active" id="editBtn" onclick="switchNotesMode('edit')">✏️ Edit</button>
-                <button class="toggle-btn" id="previewBtn" onclick="switchNotesMode('preview')">👁️ Preview</button>
-            </div>
             <div class="markdown-guide" id="markdownGuide">
                 <strong>Markdown supported:</strong> 
                 <code># Headers</code>, <code>**bold**</code>, <code>*italic*</code>, <code>- lists</code>, <code>[links](url)</code>, <code>`code`</code>, <code>> quotes</code>
             </div>
-            <textarea class="notes-editor" id="notesEditor" placeholder="# Welcome to your markdown notes!
+            <div class="notes-container">
+                <textarea class="notes-editor" id="notesEditor" placeholder="# Welcome to your live markdown editor!
 
-## You can use markdown formatting:
+## Start typing and see formatting appear instantly:
 
 ### Text Formatting
 - **Bold text** with **double asterisks**
@@ -666,24 +616,11 @@
 > Blockquotes for important notes
 > Look professional and clean
 
-```javascript
-// Code blocks with syntax highlighting
-function saveNotes() {
-    console.log('Auto-saved!');
-}
-```
-
-### Tables
-| Feature | Status |
-|---------|--------|
-| Auto-save | ✅ |
-| Markdown | ✅ |
-| Mobile | ✅ |
-
 ---
 
 Everything saves automatically as you type!"></textarea>
-            <div class="notes-preview markdown-content" id="notesPreview" style="display: none;"></div>
+                <div class="notes-overlay" id="notesOverlay"></div>
+            </div>
         </div>
     </div>
 
@@ -825,27 +762,27 @@ Everything saves automatically as you type!"></textarea>
                 const li = document.createElement('li');
                 li.className = `todo-item ${todo.completed ? 'completed' : ''}`;
                 
-                const isEditMode = !appData.todoDetailModes[todo.id] || appData.todoDetailModes[todo.id] === 'edit';
-                const detailsContent = isEditMode ? 
-                    `<textarea class="todo-details" placeholder="Add details with markdown: **bold**, *italic*, - lists, [links](url)..."
+                const hasDetails = todo.details && todo.details.trim() !== '';
+                const showingDetails = hasDetails || appData.todoDetailModes[todo.id] === 'adding';
+                
+                const detailsHtml = showingDetails ? 
+                    `<textarea class="todo-details"
                             onchange="updateTodoDetails(${todo.id}, this.value)"
-                            oninput="saveData()">${escapeHtml(todo.details)}</textarea>` :
-                    `<div class="todo-details-rendered markdown-content">${renderMarkdown(todo.details || '*No details added yet*')}</div>`;
+                            oninput="saveData()"
+                            onblur="hideTodoDetailsIfEmpty(${todo.id})">${escapeHtml(todo.details)}</textarea>` : '';
+                
+                const addDetailsBtn = !hasDetails && !showingDetails ? 
+                    `<button class="add-details-btn" onclick="showTodoDetails(${todo.id})">📝 Add details</button>` : '';
                 
                 li.innerHTML = `
                     <div class="todo-checkbox ${todo.completed ? 'completed' : ''}" 
                          onclick="toggleTodo(${todo.id})"></div>
                     <div class="todo-content">
                         <div class="todo-text priority-${todo.priority}">${escapeHtml(todo.text)}</div>
-                        ${detailsContent}
+                        ${detailsHtml}
                     </div>
                     <div class="todo-actions">
-                        <div class="todo-mode-toggle">
-                            <button class="mode-btn ${isEditMode ? 'active' : ''}" 
-                                    onclick="toggleTodoMode(${todo.id}, 'edit')" title="Edit">✏️</button>
-                            <button class="mode-btn ${!isEditMode ? 'active' : ''}" 
-                                    onclick="toggleTodoMode(${todo.id}, 'preview')" title="Preview">👁️</button>
-                        </div>
+                        ${addDetailsBtn}
                         <button class="action-btn delete" onclick="deleteTodo(${todo.id})" title="Delete">🗑️</button>
                     </div>
                 `;
@@ -883,39 +820,53 @@ Everything saves automatically as you type!"></textarea>
             }
         }
 
-        function switchNotesMode(mode) {
-            const editBtn = document.getElementById('editBtn');
-            const previewBtn = document.getElementById('previewBtn');
+        // Live markdown rendering for notes
+        function renderLiveMarkdown() {
             const editor = document.getElementById('notesEditor');
-            const preview = document.getElementById('notesPreview');
+            const overlay = document.getElementById('notesOverlay');
             
-            if (mode === 'edit') {
-                editBtn.classList.add('active');
-                previewBtn.classList.remove('active');
-                editor.style.display = 'block';
-                preview.style.display = 'none';
-            } else {
-                editBtn.classList.remove('active');
-                previewBtn.classList.add('active');
-                editor.style.display = 'none';
-                preview.style.display = 'block';
-                updateNotesPreview();
-            }
+            const text = editor.value;
             
-            appData.notesMode = mode;
-            saveData();
+            // Simple live rendering of basic markdown
+            let rendered = text
+                // Bold
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                // Italic
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                // Code
+                .replace(/`(.*?)`/g, '<code style="background: #f1f1ef; padding: 2px 4px; border-radius: 3px; font-family: monospace;">$1</code>')
+                // Headers
+                .replace(/^### (.*$)/gm, '<h3 style="font-size: 1.1em; font-weight: 600; margin: 16px 0 8px 0; color: #37352f;">$1</h3>')
+                .replace(/^## (.*$)/gm, '<h2 style="font-size: 1.3em; font-weight: 600; margin: 16px 0 8px 0; color: #37352f;">$1</h2>')
+                .replace(/^# (.*$)/gm, '<h1 style="font-size: 1.5em; font-weight: 600; margin: 16px 0 8px 0; color: #37352f;">$1</h1>')
+                // Lists
+                .replace(/^- (.*$)/gm, '<span style="color: #37352f;">• $1</span>')
+                // Links
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color: #2383e2; text-decoration: none;">$1</a>')
+                // Blockquotes
+                .replace(/^> (.*$)/gm, '<span style="border-left: 3px solid #2383e2; padding-left: 12px; color: #787774; font-style: italic;">$1</span>')
+                // Line breaks
+                .replace(/\n/g, '<br>');
+            
+            overlay.innerHTML = rendered;
         }
 
-        function updateNotesPreview() {
-            const preview = document.getElementById('notesPreview');
-            const content = document.getElementById('notesEditor').value;
-            preview.innerHTML = renderMarkdown(content);
-        }
-
-        function toggleTodoMode(todoId, mode) {
-            appData.todoDetailModes[todoId] = mode;
+        function showTodoDetails(todoId) {
+            appData.todoDetailModes[todoId] = 'adding';
             renderTodos();
-            saveData();
+            // Focus the textarea after render
+            setTimeout(() => {
+                const textarea = document.querySelector(`textarea[onchange*="${todoId}"]`);
+                if (textarea) textarea.focus();
+            }, 10);
+        }
+
+        function hideTodoDetailsIfEmpty(todoId) {
+            const todo = appData.todos.find(t => t.id === todoId);
+            if (todo && (!todo.details || todo.details.trim() === '')) {
+                delete appData.todoDetailModes[todoId];
+                renderTodos();
+            }
         }
 
         // Auto-resize textareas
