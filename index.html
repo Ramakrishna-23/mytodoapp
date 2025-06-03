@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Workspace</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -309,12 +310,229 @@
             font-size: 1rem;
             line-height: 1.7;
             resize: vertical;
-            font-family: inherit;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
             color: #37352f;
+            background: #fafafa;
+            border-radius: 6px;
+            padding: 16px;
+            border: 1px solid #e9e9e7;
         }
 
         .notes-editor::placeholder {
             color: #9b9a97;
+        }
+
+        .notes-preview {
+            min-height: 300px;
+            padding: 16px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e9e9e7;
+            font-family: inherit;
+            line-height: 1.7;
+        }
+
+        .notes-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .toggle-btn {
+            padding: 8px 16px;
+            border: 1px solid #e9e9e7;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-btn.active {
+            background: #2383e2;
+            color: white;
+            border-color: #2383e2;
+        }
+
+        .toggle-btn:hover:not(.active) {
+            background: #f8f8f7;
+        }
+
+        .markdown-guide {
+            font-size: 0.85rem;
+            color: #787774;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: #f8f8f7;
+            border-radius: 6px;
+            border-left: 3px solid #2383e2;
+        }
+
+        .markdown-guide code {
+            background: #e9e9e7;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.8rem;
+        }
+
+        .todo-details {
+            font-size: 0.9rem;
+            color: #787774;
+            background: #f8f8f7;
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            border: none;
+            width: 100%;
+            resize: vertical;
+            min-height: 60px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            outline: none;
+            transition: border 0.2s ease;
+        }
+
+        .todo-details:focus {
+            border: 1px solid #2383e2;
+        }
+
+        .todo-details::placeholder {
+            color: #9b9a97;
+        }
+
+        .todo-details-rendered {
+            font-size: 0.9rem;
+            color: #787774;
+            background: white;
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            border: 1px solid #e9e9e7;
+            min-height: 40px;
+            font-family: inherit;
+            line-height: 1.5;
+        }
+
+        .todo-mode-toggle {
+            display: flex;
+            gap: 4px;
+            margin-left: auto;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .todo-item:hover .todo-mode-toggle {
+            opacity: 1;
+        }
+
+        .mode-btn {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: #f1f1ef;
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease;
+            font-size: 12px;
+        }
+
+        .mode-btn:hover {
+            background: #e9e9e7;
+        }
+
+        .mode-btn.active {
+            background: #2383e2;
+            color: white;
+        }
+
+        /* Markdown styling */
+        .markdown-content h1, .markdown-content h2, .markdown-content h3,
+        .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+            margin: 16px 0 8px 0;
+            font-weight: 600;
+            color: #37352f;
+        }
+
+        .markdown-content h1 { font-size: 1.5em; }
+        .markdown-content h2 { font-size: 1.3em; }
+        .markdown-content h3 { font-size: 1.1em; }
+
+        .markdown-content p {
+            margin: 8px 0;
+        }
+
+        .markdown-content ul, .markdown-content ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .markdown-content li {
+            margin: 4px 0;
+        }
+
+        .markdown-content blockquote {
+            border-left: 3px solid #2383e2;
+            padding-left: 12px;
+            margin: 12px 0;
+            color: #787774;
+            font-style: italic;
+        }
+
+        .markdown-content code {
+            background: #f1f1ef;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.9em;
+        }
+
+        .markdown-content pre {
+            background: #f8f8f7;
+            border: 1px solid #e9e9e7;
+            border-radius: 6px;
+            padding: 12px;
+            overflow-x: auto;
+            margin: 12px 0;
+        }
+
+        .markdown-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .markdown-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 12px 0;
+        }
+
+        .markdown-content th, .markdown-content td {
+            border: 1px solid #e9e9e7;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .markdown-content th {
+            background: #f8f8f7;
+            font-weight: 600;
+        }
+
+        .markdown-content a {
+            color: #2383e2;
+            text-decoration: none;
+        }
+
+        .markdown-content a:hover {
+            text-decoration: underline;
+        }
+
+        .markdown-content hr {
+            border: none;
+            border-top: 1px solid #e9e9e7;
+            margin: 20px 0;
         }
 
         .stats {
@@ -416,16 +634,56 @@
                 <span class="section-icon">📝</span>
                 Notes & Details
             </div>
-            <textarea class="notes-editor" id="notesEditor" placeholder="Start writing your notes here...
+            <div class="notes-toggle">
+                <button class="toggle-btn active" id="editBtn" onclick="switchNotesMode('edit')">✏️ Edit</button>
+                <button class="toggle-btn" id="previewBtn" onclick="switchNotesMode('preview')">👁️ Preview</button>
+            </div>
+            <div class="markdown-guide" id="markdownGuide">
+                <strong>Markdown supported:</strong> 
+                <code># Headers</code>, <code>**bold**</code>, <code>*italic*</code>, <code>- lists</code>, <code>[links](url)</code>, <code>`code`</code>, <code>> quotes</code>
+            </div>
+            <textarea class="notes-editor" id="notesEditor" placeholder="# Welcome to your markdown notes!
 
-You can use this space for:
-• Detailed planning and thoughts
-• Meeting notes and ideas  
-• Project documentation
-• Brainstorming and sketches
-• Anything else you need to capture
+## You can use markdown formatting:
 
-Everything saves automatically as you type."></textarea>
+### Text Formatting
+- **Bold text** with **double asterisks**
+- *Italic text* with *single asterisks*
+- `Inline code` with backticks
+- ~~Strikethrough~~ with double tildes
+
+### Lists
+- Bullet points with dashes
+- [ ] Todo checkboxes
+- [x] Completed todos
+
+1. Numbered lists
+2. Work great too
+
+### Links and More
+[Links work great](https://example.com)
+
+> Blockquotes for important notes
+> Look professional and clean
+
+```javascript
+// Code blocks with syntax highlighting
+function saveNotes() {
+    console.log('Auto-saved!');
+}
+```
+
+### Tables
+| Feature | Status |
+|---------|--------|
+| Auto-save | ✅ |
+| Markdown | ✅ |
+| Mobile | ✅ |
+
+---
+
+Everything saves automatically as you type!"></textarea>
+            <div class="notes-preview markdown-content" id="notesPreview" style="display: none;"></div>
         </div>
     </div>
 
@@ -435,7 +693,9 @@ Everything saves automatically as you type."></textarea>
             title: '',
             subtitle: '',
             todos: [],
-            notes: ''
+            notes: '',
+            notesMode: 'edit',
+            todoDetailModes: {} // Store edit/preview mode for each todo
         };
 
         let saveTimeout = null;
@@ -454,8 +714,14 @@ Everything saves automatically as you type."></textarea>
                 todoIdCounter = Math.max(...appData.todos.map(t => t.id)) + 1;
             }
             
+            // Set notes mode
+            if (appData.notesMode) {
+                switchNotesMode(appData.notesMode);
+            }
+            
             renderTodos();
             updateStats();
+            updateNotesPreview();
         }
 
         // Save data with debouncing
@@ -472,6 +738,7 @@ Everything saves automatically as you type."></textarea>
                 appData.title = document.getElementById('pageTitle').value;
                 appData.subtitle = document.getElementById('pageSubtitle').value;
                 appData.notes = document.getElementById('notesEditor').value;
+                appData.notesMode = document.getElementById('editBtn').classList.contains('active') ? 'edit' : 'preview';
                 
                 localStorage.setItem('notionTodoApp', JSON.stringify(appData));
                 
@@ -558,16 +825,27 @@ Everything saves automatically as you type."></textarea>
                 const li = document.createElement('li');
                 li.className = `todo-item ${todo.completed ? 'completed' : ''}`;
                 
+                const isEditMode = !appData.todoDetailModes[todo.id] || appData.todoDetailModes[todo.id] === 'edit';
+                const detailsContent = isEditMode ? 
+                    `<textarea class="todo-details" placeholder="Add details with markdown: **bold**, *italic*, - lists, [links](url)..."
+                            onchange="updateTodoDetails(${todo.id}, this.value)"
+                            oninput="saveData()">${escapeHtml(todo.details)}</textarea>` :
+                    `<div class="todo-details-rendered markdown-content">${renderMarkdown(todo.details || '*No details added yet*')}</div>`;
+                
                 li.innerHTML = `
                     <div class="todo-checkbox ${todo.completed ? 'completed' : ''}" 
                          onclick="toggleTodo(${todo.id})"></div>
                     <div class="todo-content">
                         <div class="todo-text priority-${todo.priority}">${escapeHtml(todo.text)}</div>
-                        <textarea class="todo-details" placeholder="Add details, notes, or subtasks..."
-                                onchange="updateTodoDetails(${todo.id}, this.value)"
-                                oninput="saveData()">${escapeHtml(todo.details)}</textarea>
+                        ${detailsContent}
                     </div>
                     <div class="todo-actions">
+                        <div class="todo-mode-toggle">
+                            <button class="mode-btn ${isEditMode ? 'active' : ''}" 
+                                    onclick="toggleTodoMode(${todo.id}, 'edit')" title="Edit">✏️</button>
+                            <button class="mode-btn ${!isEditMode ? 'active' : ''}" 
+                                    onclick="toggleTodoMode(${todo.id}, 'preview')" title="Preview">👁️</button>
+                        </div>
                         <button class="action-btn delete" onclick="deleteTodo(${todo.id})" title="Delete">🗑️</button>
                     </div>
                 `;
@@ -595,6 +873,51 @@ Everything saves automatically as you type."></textarea>
                 .replace(/'/g, "&#039;");
         }
 
+        // Markdown functions
+        function renderMarkdown(text) {
+            if (!text || text.trim() === '') return '<em>No content</em>';
+            try {
+                return marked.parse(text);
+            } catch (error) {
+                return '<em>Error rendering markdown</em>';
+            }
+        }
+
+        function switchNotesMode(mode) {
+            const editBtn = document.getElementById('editBtn');
+            const previewBtn = document.getElementById('previewBtn');
+            const editor = document.getElementById('notesEditor');
+            const preview = document.getElementById('notesPreview');
+            
+            if (mode === 'edit') {
+                editBtn.classList.add('active');
+                previewBtn.classList.remove('active');
+                editor.style.display = 'block';
+                preview.style.display = 'none';
+            } else {
+                editBtn.classList.remove('active');
+                previewBtn.classList.add('active');
+                editor.style.display = 'none';
+                preview.style.display = 'block';
+                updateNotesPreview();
+            }
+            
+            appData.notesMode = mode;
+            saveData();
+        }
+
+        function updateNotesPreview() {
+            const preview = document.getElementById('notesPreview');
+            const content = document.getElementById('notesEditor').value;
+            preview.innerHTML = renderMarkdown(content);
+        }
+
+        function toggleTodoMode(todoId, mode) {
+            appData.todoDetailModes[todoId] = mode;
+            renderTodos();
+            saveData();
+        }
+
         // Auto-resize textareas
         function autoResize(element) {
             element.style.height = 'auto';
@@ -612,7 +935,12 @@ Everything saves automatically as you type."></textarea>
             saveData();
         });
 
-        document.getElementById('notesEditor').addEventListener('input', saveData);
+        document.getElementById('notesEditor').addEventListener('input', function() {
+            saveData();
+            if (document.getElementById('previewBtn').classList.contains('active')) {
+                updateNotesPreview();
+            }
+        });
 
         document.getElementById('newTodo').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
